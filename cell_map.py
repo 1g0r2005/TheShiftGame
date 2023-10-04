@@ -8,12 +8,54 @@ FPS = 60
 alive = [0,1,2,3]
 dead = [5,6,7,8]
 
-cells = [[random.choice([0,1]) for j in range(N)] for i in range(N)]
-
 cellsize = WIDTH//N,HEIGHT//N
+
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
+
+def init_gen(N,min_shift,max_shift,min_size,max_size):
+    '''
+    generate start cell states
+    N - size of matrix(N*N)
+    min_shift - minimal shift for of enter
+    max_shift - maximal shift for of enter
+    min_size - minimal size of x_enter
+    max_size - maximal size of y_enter
+    '''
+    cells = [[random.choice([0,1]) for j in range(N)] for i in range(N)]
+
+    entupx1 = random.randrange(min_shift,N-max_shift)
+    entupx2 = random.randrange(entupx1+min_size,entupx1+max_size)
+    entdnx1 = random.randrange(min_shift,N-max_shift)
+    entdnx2 = random.randrange(entupx1+min_size,entupx1+max_size)
+    entlfy1 = random.randrange(min_shift,N-max_shift)
+    entlfy2 = random.randrange(entupx1+min_size,entupx1+max_size)
+    entrty1 = random.randrange(min_shift,N-max_shift)
+    entrty2 = random.randrange(entupx1+min_size,entupx1+max_size)
+    for x in range(N):
+        for y in range(N):
+            if y < 2:
+                if x>=entupx1 and x<=entupx2:
+                    cells[x][y]=0
+                else:
+                    cells[x][y]=1
+            if y > N-3:
+                if x>=entdnx1 and x<=entdnx2:
+                    cells[x][y]=0
+                else:
+                    cells[x][y]=1
+            if x < 2:
+                if y>=entlfy1 and y<=entlfy2:
+                    cells[x][y]=0
+                else:
+                    cells[x][y]=1
+            if x > N-3:
+                if y>=entrty1 and y<=entrty2:
+                    cells[x][y]=0
+                else:
+                    cells[x][y]=1
+    return cells
 
 def draw_cell(screen,matrix,color_matrix=screen):
     '''
@@ -72,27 +114,60 @@ def generate(cell_matrix,nb_matrix,alive,dead):
             else:
                 if neibour in alive: #1 to 0 (wall to air)
                     cell_matrix[x][y] = 0
-                    
-def generate_post(cell_matrix):
+
+                 
+def post_gen(cell_matrix,color_matrix):
+    '''
+    fix generation artefacts
+    cell_matrix - bitmap of cells states
+    color_matrix - map of cells colors
+    '''
     for x in range(N):
         for y in range(N):
-            if (x<1 or y<1)or((x>N-2) or (y>N-2)):
-                cell_matrix[x][y]=1
-                color_cells[x][y]=1
-                
-
-
-running = True
-
+            if x==0:
+                if cell_matrix[x+1][y]==1:
+                    cell_matrix[x][y]=1
+                    if color_matrix[x+1][y]==8:
+                        color_matrix[x][y] = 8
+                    else:
+                        color_matrix[x][y] = color_matrix[x+1][y]+1
+            if y==0:
+                if cell_matrix[x][y+1]==1:
+                    cell_matrix[x][y]=1
+                    if color_matrix[x][y+1]==8:
+                        color_matrix[x][y] = 8
+                    else:
+                        color_matrix[x][y] = color_matrix[x][y+1]+1
+            if x==N-1:
+                if cell_matrix[x-1][y]==1:
+                    cell_matrix[x][y]=1
+                    if color_matrix[x-2][y]<7:
+                        color_matrix[x-1][y] =  color_matrix[x-2][y]+1
+                        if color_matrix[x-2][y]<8:
+                            color_matrix[x][y] = color_matrix[x-1][y]+1
+                        else:
+                            color_matrix[x][y] = 8
+                    else:
+                        color_matrix[x-1][y] =  8
+                        color_matrix[x][y] = 8
+            if y==N-1:
+                if cell_matrix[x][y-1]==1:
+                    cell_matrix[x][y]=1
+                    if color_matrix[x][y-1]==8:
+                        color_matrix[x][y] = 8
+                    else:
+                        color_matrix[x][y] = color_matrix[x][y-1]+1
+                        
+                             
+cells = init_gen(N,5,10,0,8)
 ##gen map
 maxtick = 4
 for i in range(maxtick):
     generate(cells,neibourhood(cells),alive,dead)
-    
 color_cells = neibourhood(cells)
+post_gen(cells,color_cells)
 
-generate_post(cells)
-
+running = True
 while running:
     clock.tick(FPS)
     for event in pygame.event.get():
