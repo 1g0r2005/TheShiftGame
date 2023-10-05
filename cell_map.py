@@ -23,7 +23,6 @@ def init_gen(N,min_shift,max_shift,min_size,max_size):
     max_size - maximal size of y_enter
     '''
     cells = [[random.choice([0,1]) for j in range(N)] for i in range(N)]
-
     entupx1 = random.randrange(min_shift,N-max_shift)
     entupx2 = random.randrange(entupx1+min_size,entupx1+max_size)
     entdnx1 = random.randrange(min_shift,N-max_shift)
