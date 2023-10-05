@@ -1,6 +1,5 @@
 import pygame
 import random
-from copy import copy
 N = 50
 WIDTH,HEIGHT = 600,600
 FPS = 60
@@ -139,20 +138,23 @@ def post_gen(cell_matrix,color_matrix):
                         color_matrix[x][y] = 8
                     else:
                         color_matrix[x][y] = color_matrix[x][y-1]+1
-                        
-def draw_cell(screen,matrix,color_matrix=screen):
+
+
+def draw_cell(screen,matrix,color_matrix=screen,light=[[1]*N for i in range(N)]):
     '''
     draw new state of cells by matrix
     screen - pygame screen object
     matrix - bitmap of cells states
     color - map of cells colors
+    light - light for whole map
     '''
     for x in range(N):
         for y in range(N):
             if matrix[x][y] == 1:
-                color = list(map(lambda single_color: single_color*(1-color_matrix[x][y]/9),[255,191,128]))#255*(1-color_matrix[x][y]/8)
+                color = list(map(lambda single_color: single_color*(1-color_matrix[x][y]/10)*light[x][y],[255,191,128]))#255*(1-color_matrix[x][y]/8)
             else:
-                color = (255*(7/8),204*(7/8),153*(7/8))
+                color = list(map(lambda single_color: single_color*light[x][y],(255,217,179)))
+            color = color
             pygame.draw.rect(screen,color,[x*cellsize[0],y*cellsize[1],(x+1)*cellsize[0],(y+1)*cellsize[1]])     
 
 def draw_player(screen,x,y):
@@ -164,6 +166,7 @@ def draw_player(screen,x,y):
     PLAYER_COLOR = (255,0,0)
    
     pygame.draw.rect(screen,PLAYER_COLOR,[x*cellsize[0],y*cellsize[1],cellsize[0],cellsize[1]])
+
 def move_player(x0,y0,dir,cellmap):
     '''
     return new position of player
@@ -195,6 +198,20 @@ def move_player(x0,y0,dir,cellmap):
                 x1-=1
     return x1,y1
 
+def dot_light(light,x,y,I,r):#demo
+    '''
+    create new spot from dot light
+    light - light for whole map
+    x, y - coords of new dot light
+    I - intens of new dot light (0-1)
+    r - max distance where dot light affect cells
+    '''
+    for x0 in range(max(0,x-r),min(x+r,N)):
+        for y0 in range(max(0,y-r),min(y+r,N)):
+            d = (x0-x)**2+(y0-y)**2
+            attenuation = max(0.05,1-(d/r))
+            light[x0][y0] = I*attenuation
+
 '''map generation'''
 cells = init_gen(N,5,10,0,8)
 maxtick = 4
@@ -203,18 +220,16 @@ for i in range(maxtick):
 color_cells = neibourhood(cells)
 post_gen(cells,color_cells)
 '''initial player pos [temp]'''
-
 flag = True
 while flag:
     x,y = random.randint(0,N-1),random.randint(0,N-1)
     if cells[x][y]==0:
         flag = False
         print(x,y)
-
+        
 running = True
 motion = [0,0]
-
-
+light_matrix = [[0.05]*N for i in range(N)]
 while running:
     clock.tick(FPS)
     for event in pygame.event.get():
@@ -233,8 +248,10 @@ while running:
             if event.key in [pygame.K_LEFT,
                          pygame.K_RIGHT,pygame.K_UP,pygame.K_DOWN]:
                 motion = [0,0]
-    draw_cell(screen,cells,color_matrix=color_cells)
     x,y = move_player(x,y,motion,cells)
+    dot_light(light_matrix,x,y,1,20)
+    draw_cell(screen,cells,color_matrix=color_cells,light=light_matrix)
+    
     draw_player(screen,x,y)
 
     
