@@ -203,6 +203,22 @@ class Player(Entity):  #заготовка
     def __init__(self,x,y,color=(255,255,255)):
         super().__init__(x,y,color)
 
+class Dot_Light(): #переписать!
+    def __init__(self,x,y,I,r):
+        self.I = I
+        self.x = x
+        self.y = y
+        self.r = r
+    def light(self,light_map):
+        for x0 in range(max(0,self.x-self.r),min(self.x+self.r,N)):
+            for y0 in range(max(0,self.y-self.r),min(self.y+self.r,N)):
+                d = (x0-self.x)**2+(y0-self.y)**2
+                attenuation = max(0.05,1-(d/self.r))
+                light_map[x0][y0] = self.I*attenuation
+    def move(self,new_x,new_y):
+        self.x = new_x
+        self.y = new_y
+
 '''map generation'''
 cells = init_gen(N,5,10,0,8)
 maxtick = 4
@@ -218,11 +234,10 @@ while flag:
         flag = False
 
 player = Player(player_x,player_y,color=PLAYER_COLOR)
-
+player_light = Dot_Light(player_x,player_y,1,20)
 running = True
 motion = [0,0]
-light_matrix = [[1]*N for i in range(N)]
-
+light_matrix = [[0.05]*N for i in range(N)]
 while running:
     clock.tick(FPS)
     for event in pygame.event.get():
@@ -245,107 +260,11 @@ while running:
 
     draw_cell(screen,cells,color_matrix=color_cells,light=light_matrix)
 
+    player_light.x = player.x
+    player_light.y = player.y
     player.move(motion,cells)
+    player_light.light(light_matrix)
     player.draw(screen)
-
-    pygame.display.update()
-"""
-def draw_player(screen,x,y):
-    '''
-    draw position of player
-    screen - pygame screen object
-    x,y - coords of player cell
-    '''
-    PLAYER_COLOR = (255,0,0)
-   
-    pygame.draw.rect(screen,PLAYER_COLOR,[x*cellsize[0],y*cellsize[1],cellsize[0],cellsize[1]])
-
-def move_player(x0,y0,dir,cellmap):
-    '''
-    return new position of player
-    use keyboard events
-    x0,y0 - coords of player
-    dir - direction of movement
-    [left = [-1,0]]
-    [right = [1,0]]
-    [up = [0,-1]]
-    [down = [0,1]]
-    cellmap - bitmap of cells states (1=wall,0=air)
-    '''
-    x1,y1 = x0,y0
-    if dir[0]==1: #down
-        if y0!=N-1:
-            if cellmap[x0][y0+1]==0:
-                y1+=1
-    elif dir[0]==-1: #up
-        if y0!=0:
-            if cellmap[x0][y0-1]==0:
-                y1-=1
-    if dir[1]==1: #right
-        if x0!=N-1:
-            if cellmap[x0+1][y0]==0:
-                x1+=1
-    elif dir[1]==-1: #left
-        if x0!=0:
-            if cellmap[x0-1][y0]==0:
-                x1-=1
-    return x1,y1
-
-def dot_light(light,x,y,I,r):#demo
-    '''
-    create new spot from dot light
-    light - light for whole map
-    x, y - coords of new dot light
-    I - intens of new dot light (0-1)
-    r - max distance where dot light affect cells
-    '''
-    for x0 in range(max(0,x-r),min(x+r,N)):
-        for y0 in range(max(0,y-r),min(y+r,N)):
-            d = (x0-x)**2+(y0-y)**2
-            attenuation = max(0.05,1-(d/r))
-            light[x0][y0] = I*attenuation
-
-'''map generation'''
-cells = init_gen(N,5,10,0,8)
-maxtick = 4
-for i in range(maxtick):
-    generate(cells,neibourhood(cells),alive,dead)
-color_cells = neibourhood(cells)
-post_gen(cells,color_cells)
-'''initial player pos [temp]'''
-flag = True
-while flag:
-    x,y = random.randint(0,N-1),random.randint(0,N-1)
-    if cells[x][y]==0:
-        flag = False
-        
-running = True
-motion = [0,0]
-light_matrix = [[0.05]*N for i in range(N)]
-while running:
-    clock.tick(FPS)
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_LEFT: #left
-                motion = [0,-1]
-            elif event.key == pygame.K_RIGHT: #right
-                motion = [0,1]
-            elif event.key == pygame.K_UP: #up
-                motion = [-1,0]
-            elif event.key == pygame.K_DOWN: #down
-                motion = [1,0]
-        elif event.type == pygame.KEYUP:
-            if event.key in [pygame.K_LEFT,
-                         pygame.K_RIGHT,pygame.K_UP,pygame.K_DOWN]:
-                motion = [0,0]
-    x,y = move_player(x,y,motion,cells)
-    dot_light(light_matrix,x,y,1,20)
-    draw_cell(screen,cells,color_matrix=color_cells,light=light_matrix)
     
-    draw_player(screen,x,y)
 
-    
     pygame.display.flip()
-"""
