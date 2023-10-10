@@ -12,6 +12,8 @@ pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 
+PLAYER_COLOR = (255,0,0)
+
 def init_gen(N,min_shift,max_shift,min_size,max_size):
     '''
     generate start cell states
@@ -136,8 +138,6 @@ def post_gen(cell_matrix,color_matrix):
                         color_matrix[x][y] = 8
                     else:
                         color_matrix[x][y] = color_matrix[x][y-1]+1
-
-
 def draw_cell(screen,matrix,color_matrix=screen,light=[[1]*N for i in range(N)]):
     '''
     draw new state of cells by matrix
@@ -155,6 +155,101 @@ def draw_cell(screen,matrix,color_matrix=screen,light=[[1]*N for i in range(N)])
             color = color
             pygame.draw.rect(screen,color,[x*cellsize[0],y*cellsize[1],(x+1)*cellsize[0],(y+1)*cellsize[1]])     
 
+
+class Entity():
+    '''
+    Entity class - moving objects
+
+    __init__(self,x,y,color=(255,255,255))
+        x,y - initial pos
+        color - color of rect(now all ent are rects)
+    draw(self,surf)
+        surf - pygame surface object
+    move(self,dx,dy)
+        dx,dy - change coords of object
+    '''
+    speed = 1 #cells per tick
+
+    def __init__(self,x,y,color=(255,255,255)):
+        self.x,self.y = x,y
+        self.color = color
+    def draw(self,surf):
+        #now all ent are sq
+        pygame.draw.rect(surf,self.color,[self.x*cellsize[0],self.y*cellsize[1],cellsize[0],cellsize[1]])
+
+    def move(self,dir,cellmap):
+        x0,y0 = self.x,self.y
+        dx,dy = self.speed,self.speed
+        if dir[0]==1: #down
+            if y0!=N-1:
+                if cellmap[x0][y0+dy]==0:
+                    self.y+=1
+        elif dir[0]==-1: #up
+            if y0!=0:
+                if cellmap[x0][y0-dy]==0:
+                    self.y-=1
+        if dir[1]==1: #right
+            if x0!=N-1:
+                if cellmap[x0+dx][y0]==0:
+                    self.x+=1
+        elif dir[1]==-1: #left
+            if x0!=0:
+                if cellmap[x0-dx][y0]==0:
+                    self.x-=1
+        
+class Player(Entity):  #заготовка
+    HP = 100 #percent
+
+    def __init__(self,x,y,color=(255,255,255)):
+        super().__init__(x,y,color)
+
+'''map generation'''
+cells = init_gen(N,5,10,0,8)
+maxtick = 4
+for i in range(maxtick):
+    generate(cells,neibourhood(cells),alive,dead)
+color_cells = neibourhood(cells)
+post_gen(cells,color_cells)
+'''initial player pos [temp]'''
+flag = True
+while flag:
+    player_x,player_y = random.randint(0,N-1),random.randint(0,N-1)
+    if cells[player_x][player_y]==0:
+        flag = False
+
+player = Player(player_x,player_y,color=PLAYER_COLOR)
+
+running = True
+motion = [0,0]
+light_matrix = [[1]*N for i in range(N)]
+
+while running:
+    clock.tick(FPS)
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_LEFT: #left
+                motion[1] = -1
+            elif event.key == pygame.K_RIGHT: #right
+                motion[1] = 1
+            elif event.key == pygame.K_UP: #up
+                motion[0] = -1
+            elif event.key == pygame.K_DOWN: #down
+                motion[0] = 1
+        elif event.type == pygame.KEYUP:
+            if event.key == pygame.K_LEFT: motion[1] = 0
+            elif event.key == pygame.K_RIGHT: motion[1] = 0
+            elif event.key == pygame.K_UP: motion[0] = 0
+            elif event.key == pygame.K_DOWN: motion[0] = 0
+
+    draw_cell(screen,cells,color_matrix=color_cells,light=light_matrix)
+
+    player.move(motion,cells)
+    player.draw(screen)
+
+    pygame.display.update()
+"""
 def draw_player(screen,x,y):
     '''
     draw position of player
@@ -253,3 +348,4 @@ while running:
 
     
     pygame.display.flip()
+"""
