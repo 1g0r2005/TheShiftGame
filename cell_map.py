@@ -8,7 +8,6 @@ alive = [0,1,2,3]
 dead = [5,6,7,8]
 
 cellsize = WIDTH//N,HEIGHT//N
-print(cellsize)
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
@@ -224,7 +223,6 @@ while flag:
     x,y = random.randint(0,N-1),random.randint(0,N-1)
     if cells[x][y]==0:
         flag = False
-        print(x,y)
         
 running = True
 motion = [0,0]
