@@ -2,17 +2,31 @@ import pygame
 import random
 N = 50
 WIDTH,HEIGHT = 600,600
-FPS = 60
+FPS = 30
 
 alive = [0,1,2,3]
 dead = [5,6,7,8]
 
 cellsize = WIDTH//N,HEIGHT//N
 pygame.init()
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
+
+'''surfaces'''
+screen = pygame.display.set_mode((WIDTH, HEIGHT)) # main screen (static, in_cycle)
+bg_sc = pygame.Surface((WIDTH,HEIGHT)) # surface for background (static, out_cycle)
+ent_sc = pygame.Surface((WIDTH,HEIGHT)) # surface for entities (animated)
+ent_sc.set_colorkey((0,0,0))
+light_sc = pygame.Surface((WIDTH,HEIGHT)) # surface for light
+light_sc.fill((0,0,0))
+light_sc.set_alpha(220)
+
+
 clock = pygame.time.Clock()
 
+
+'''color consts'''
 PLAYER_COLOR = (255,0,0)
+WALL_COLOR =[255,191,128]
+FL_COLOR = (255,217,179)
 
 def init_gen(N,min_shift,max_shift,min_size,max_size):
     '''
@@ -138,7 +152,7 @@ def post_gen(cell_matrix,color_matrix):
                         color_matrix[x][y] = 8
                     else:
                         color_matrix[x][y] = color_matrix[x][y-1]+1
-def draw_cell(screen,matrix,color_matrix=screen,light=[[1]*N for i in range(N)]):
+def draw_cell(screen,matrix,color_matrix=screen):
     '''
     draw new state of cells by matrix
     screen - pygame screen object
@@ -149,14 +163,13 @@ def draw_cell(screen,matrix,color_matrix=screen,light=[[1]*N for i in range(N)])
     for x in range(N):
         for y in range(N):
             if matrix[x][y] == 1:
-                color = list(map(lambda single_color: single_color*(1-color_matrix[x][y]/10)*light[x][y],[255,191,128]))#255*(1-color_matrix[x][y]/8)
+                color = list(map(lambda single_color: single_color*(1-color_matrix[x][y]/10),WALL_COLOR))#255*(1-color_matrix[x][y]/8)
             else:
-                color = list(map(lambda single_color: single_color*light[x][y],(255,217,179)))
-            color = color
+                color = list(map(lambda single_color: single_color,FL_COLOR))
             pygame.draw.rect(screen,color,[x*cellsize[0],y*cellsize[1],(x+1)*cellsize[0],(y+1)*cellsize[1]])     
 
 
-class Entity():
+class Entity(pygame.Surface):
     '''
     Entity class - moving objects
 
@@ -169,13 +182,17 @@ class Entity():
         dx,dy - change coords of object
     '''
     speed = 1 #cells per tick
-
+    
     def __init__(self,x,y,color=(255,255,255)):
+        super().__init__((cellsize[0],cellsize[1]))
         self.x,self.y = x,y
         self.color = color
+        self.fill(color)
     def draw(self,surf):
         #now all ent are sq
-        pygame.draw.rect(surf,self.color,[self.x*cellsize[0],self.y*cellsize[1],cellsize[0],cellsize[1]])
+        #pygame.draw.rect(surf,self.color,[self.x*cellsize[0],self.y*cellsize[1],cellsize[0],cellsize[1]])
+        
+        surf.blit(self,[self.x*cellsize[0],self.y*cellsize[1]])
 
     def move(self,dir,cellmap):
         x0,y0 = self.x,self.y
@@ -209,12 +226,14 @@ class Dot_Light(): #переписать!
         self.x = x
         self.y = y
         self.r = r
-    def light(self,light_map):
+    def light(self):
         for x0 in range(max(0,self.x-self.r),min(self.x+self.r,N)):
             for y0 in range(max(0,self.y-self.r),min(self.y+self.r,N)):
                 d = (x0-self.x)**2+(y0-self.y)**2
-                attenuation = max(0.05,1-(d/self.r))
-                light_map[x0][y0] = self.I*attenuation
+                attenuation = max(0,1-(d/self.r))
+                #light_map[x0][y0] = self.I*attenuation
+                alpha = self.I*attenuation*60
+                pygame.draw.rect(light_sc,[alpha,alpha,alpha],[x0*cellsize[0],y0*cellsize[1],cellsize[0],cellsize[1]])
     def move(self,new_x,new_y):
         self.x = new_x
         self.y = new_y
@@ -234,12 +253,18 @@ while flag:
         flag = False
 
 player = Player(player_x,player_y,color=PLAYER_COLOR)
-player_light = Dot_Light(player_x,player_y,1,20)
+player_light = Dot_Light(player_x,player_y,1,10)
 running = True
 motion = [0,0]
-light_matrix = [[0.05]*N for i in range(N)]
+
+'''init screen'''
+draw_cell(bg_sc,cells,color_matrix=color_cells)
+screen.blit(bg_sc,(0,0))
+screen.blit(light_sc,(0,0))
+f_light = 1
 while running:
     clock.tick(FPS)
+    print(clock.get_fps())
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -252,19 +277,31 @@ while running:
                 motion[0] = -1
             elif event.key == pygame.K_DOWN: #down
                 motion[0] = 1
+            elif event.key == pygame.K_f: #flashlight
+                f_light *= -1
+            
         elif event.type == pygame.KEYUP:
             if event.key == pygame.K_LEFT: motion[1] = 0
             elif event.key == pygame.K_RIGHT: motion[1] = 0
             elif event.key == pygame.K_UP: motion[0] = 0
             elif event.key == pygame.K_DOWN: motion[0] = 0
+        
 
-    draw_cell(screen,cells,color_matrix=color_cells,light=light_matrix)
-
-    player_light.x = player.x
-    player_light.y = player.y
-    player.move(motion,cells)
-    player_light.light(light_matrix)
-    player.draw(screen)
     
 
-    pygame.display.flip()
+    
+    
+    player.move(motion,cells)
+    player_light.x = player.x
+    player_light.y = player.y
+    if f_light==1:
+        player_light.light()
+    else:
+        pass
+    
+
+    screen.blit(bg_sc,(0,0))
+    player.draw(screen)
+    screen.blit(light_sc,(0,0))
+    light_sc.fill((0,0,0))
+    pygame.display.update()
