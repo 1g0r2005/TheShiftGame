@@ -1,0 +1,7 @@
+version: "0.0.2a"
+logger:
+ level: "INFO"
+screendef:
+ width: 600
+ height: 600
+fpslock: 30
