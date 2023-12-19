@@ -10,23 +10,23 @@ dead = [5,6,7,8]
 cellsize = WIDTH//N,HEIGHT//N
 pygame.init()
 
+'''color consts'''
+PLAYER_COLOR = (255,0,0)
+WALL_COLOR =[255,191,128]
+FL_COLOR = (255,217,179)
+LIGHT_COLOR = [250,214,130,200]
+
 '''surfaces'''
 screen = pygame.display.set_mode((WIDTH, HEIGHT)) # main screen (static, in_cycle)
 bg_sc = pygame.Surface((WIDTH,HEIGHT)) # surface for background (static, out_cycle)
 ent_sc = pygame.Surface((WIDTH,HEIGHT)) # surface for entities (animated)
 ent_sc.set_colorkey((0,0,0))
-light_sc = pygame.Surface((WIDTH,HEIGHT)) # surface for light
-light_sc.fill((0,0,0))
-light_sc.set_alpha(220)
+light_sc = pygame.Surface((WIDTH,HEIGHT),flags=pygame.SRCALPHA) # surface for light
+light_sc.fill(LIGHT_COLOR)
+light_sc.set_alpha(240)
 
 
 clock = pygame.time.Clock()
-
-
-'''color consts'''
-PLAYER_COLOR = (255,0,0)
-WALL_COLOR =[255,191,128]
-FL_COLOR = (255,217,179)
 
 def init_gen(N,min_shift,max_shift,min_size,max_size):
     '''
@@ -230,10 +230,17 @@ class Dot_Light(): #переписать!
         for x0 in range(max(0,self.x-self.r),min(self.x+self.r,N)):
             for y0 in range(max(0,self.y-self.r),min(self.y+self.r,N)):
                 d = (x0-self.x)**2+(y0-self.y)**2
-                attenuation = max(0,1-(d/self.r))
-                #light_map[x0][y0] = self.I*attenuation
-                alpha = self.I*attenuation*60
-                pygame.draw.rect(light_sc,[alpha,alpha,alpha],[x0*cellsize[0],y0*cellsize[1],cellsize[0],cellsize[1]])
+                if d<=self.r:
+                    attenuation = max(0.2,1-(d/self.r))
+                    #light_map[x0][y0] = self.I*attenuation
+                    intensivity = (self.I*attenuation)
+                    if intensivity!=0:
+                        alpha = 100
+                    else:
+                        alpha = 255
+                    color = [single_color*intensivity for single_color in LIGHT_COLOR][:3]+[alpha]
+                    #print(color)
+                    pygame.draw.rect(light_sc,color,[x0*cellsize[0],y0*cellsize[1],cellsize[0],cellsize[1]])
     def move(self,new_x,new_y):
         self.x = new_x
         self.y = new_y
@@ -253,7 +260,7 @@ while flag:
         flag = False
 
 player = Player(player_x,player_y,color=PLAYER_COLOR)
-player_light = Dot_Light(player_x,player_y,1,10)
+player_light = Dot_Light(player_x,player_y,1,20)
 running = True
 motion = [0,0]
 
