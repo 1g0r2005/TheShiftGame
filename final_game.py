@@ -174,10 +174,10 @@ def initial_generation(N,min_shift,max_shift,min_size,max_size):
     '''
     gen_main start cell states
     N - size of matrix(N*N)
-    min_shift - minimal shift for of enter
-    max_shift - maximal shift for of enter
-    min_size - minimal size of x_enter
-    max_size - maximal size of y_enter
+    min_shift - minimal shift for enter
+    max_shift - maximal shift for enter
+    min_size - minimal size of enter
+    max_size - maximal size of enter
     '''
     cells = [[random.choice([0,1]) for j in range(N)] for i in range(N)]
     entupx1 = random.randrange(min_shift,N-max_shift)
@@ -238,7 +238,7 @@ def check_neighbors(matrix):
 
 def main_generation(cell_matrix,nb_matrix,alive,dead):
     '''
-    gen_main next state of cell matrix with rules connected with cell and her check_nb
+    main_generation create next state of cell matrix with rules connected with cell and her check_nb
     cell_matrix - bitmap of cells states
     nb_matrix - matrix of cells neibours
     alive - when cell continue live (count of alive neibours)
