@@ -18,7 +18,7 @@ with open("config.yaml", 'r') as f:
     version = config_temp['version']
     log_lev = config_temp['logger']['level']
     screenWidth,screenHeight = config_temp['screendef'].values()
-    fps = 60#config_temp['fpslock']
+    fps = config_temp['fpslock']
 
 config = configparser.ConfigParser()
 config.read("cellrules.ini")
@@ -112,7 +112,8 @@ class Player(Entity):
                    self.inventory["DotLight"]-=1
                case _:
                    pass
-     
+        else:
+            print(f"Don't have any {unit}")
 
 class DotLight():
     '''
@@ -131,7 +132,7 @@ class DotLight():
         change coord of spot
         new_x,new_y - updated coords
     '''
-    def __init__(self,x,y,I,r,temp=False,lifetime=random.randint(500,600)):
+    def __init__(self,x,y,I,r,temp=False,lifetime=random.randint(300,400)):
         self.I = I
         self.x = x
         self.y = y
@@ -146,10 +147,18 @@ class DotLight():
                 d = (x0-self.x)**2+(y0-self.y)**2
                 attenuation = max(0,1-(d/self.r))
                 alpha = self.I*attenuation*60
-                if cellsList[x0][y0]==0 and sum(cellsList[x][y] for x in range(min(x0,self.x),max(x0,self.x)+1) for y in range(min(y0,self.y),max(y0,self.y)+1))==0:
-                    oldColor = screenLight.get_at((x0*cellSize[0],y0*cellSize[1]))[0]
-                    newColor = max(oldColor,alpha)
-                    pygame.draw.rect(screenLight,[newColor,newColor,newColor*0.45],[x0*cellSize[0],y0*cellSize[1],cellSize[0],cellSize[1]])
+                oldColor = screenLight.get_at((x0*cellSize[0],y0*cellSize[1]))[0]
+                checkWallBetw = sum(cellsList[x][y] for x in range(min(x0,self.x),max(x0,self.x)+1) for y in range(min(y0,self.y),max(y0,self.y)+1))
+                if cellsList[x0][y0]==0 and checkWallBetw==0:
+                        newColorAll = max(oldColor,alpha)
+                        if not self.temp:
+                            newColorR = newColorAll*random.randint(80,100)/100
+                            newColorG = newColorAll*random.randint(80,100)/100
+                            newColorB = newColorAll*random.randint(50,60)/100
+                        else:
+                            newColorR,newColorG,newColorB = newColorAll,newColorAll,newColorAll
+                        pygame.draw.rect(screenLight,[newColorR,newColorG,newColorB],[x0*cellSize[0],y0*cellSize[1],cellSize[0],cellSize[1]])
+                
     def move(self,new_x,new_y):
         self.x = new_x
         self.y = new_y
@@ -159,7 +168,7 @@ screenBack = Screen(screenWidth,screenHeight) # surface for background (static, 
 screenEntity = Screen(screenWidth,screenHeight) # surface for entities (animated)
 screenLight = Screen(screenWidth,screenHeight) # surface for light
 screenEntity.set_colorkey(BLACK)
-screenLight.set_alpha(220)
+screenLight.set_alpha(240)
 
 def initial_generation(N,min_shift,max_shift,min_size,max_size):
     '''
@@ -333,7 +342,6 @@ def screen_thread_func():
     f_update_items = False #flag for updating persons items
     while running:
         clock.tick(fps)
-        print(clock.get_fps())
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False

@@ -4,4 +4,4 @@ logger:
 screendef:
  width: 600
  height: 600
-fpslock: 30
+fpslock: 10
